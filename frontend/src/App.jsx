@@ -196,12 +196,25 @@ export default function App() {
 
   useEffect(() => () => { if (urlRef.current) URL.revokeObjectURL(urlRef.current); }, []);
 
+  const isUntouchedTemplate = () => {
+    const t = text.trim();
+    if (!t) return true;
+    return DIAGRAM_TYPES.some((dt) => t === pretty(TEMPLATES[dt]).trim());
+  };
+
   const changeType = (t) => {
+    if (t === type) return;
+    if (!isUntouchedTemplate() &&
+        !window.confirm(`Vas a cambiar a "${t}". El JSON actual es de "${type}" y no compila como "${t}", así que se reemplazará por el ejemplo de "${t}". ¿Continuar?`)) {
+      return;
+    }
+    setCurrentId(null);
     setType(t);
+    setText(pretty(TEMPLATES[t]));
   };
 
   const loadExample = (t) => {
-    const hasWork = text.trim() && text.trim() !== pretty(TEMPLATES[type]).trim();
+    const hasWork = text.trim() && !isUntouchedTemplate();
     if (hasWork && !window.confirm('Esto reemplazará el JSON actual con el ejemplo. ¿Continuar?')) return;
     setCurrentId(null);
     setType(t);

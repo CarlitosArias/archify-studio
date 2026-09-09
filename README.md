@@ -32,7 +32,7 @@ dataflow, lifecycle.
 frontend (Vite + React)                     backend (Fastify)                 engine (Archify)
   editor de texto JSON simple      ──POST /api/render-simple/:type──►  simple.mjs expande → spec
   iframe con el HTML de Archify     ◄──────── HTML ──────────────────  → deliver → HTML autocontenido
-  Guardar/Cargar (Mis diagramas)   ──── /api/diagrams (Postgres) ────  persiste el JSON simple
+  Guardar/Cargar (Mis diagramas)   ──── /api/diagrams (SQLite) ─────  persiste el JSON simple
 ```
 
 - **engine/**: copia autónoma del bundle Archify. El núcleo de layout es JS puro (sin
@@ -211,16 +211,18 @@ HOST=0.0.0.0 PORT=4319 node server.mjs     # sirve API + dist en el mismo puerto
     grid), lifecycle (state en lane con banda propia main/terminal, col libre). Cuando una edición no
     compila, el diagnóstico de Archify se muestra y el usuario ajusta desde el panel.
 - **Fase 3** — persistencia multiusuario + hosting.
-  - **3a persistencia server-side** ✅: PostgreSQL (homelab). Tabla `diagrams` (ver `backend/schema.sql`),
-    auto-creada idempotente por `initDb()` al arrancar. Endpoints CRUD `GET/POST/PUT/DELETE /diagrams`
-    en `backend/db.mjs`. El backend lee `DATABASE_URL` de `backend/.env` (NO commiteado); sin esa var,
-    la persistencia se desactiva y `/diagrams` responde 503 (layout/export siguen funcionando). El
-    frontend tiene un desplegable "Mis diagramas" (Guardar server-side POST/PUT, Cargar, Eliminar);
+  - **3a persistencia server-side** ✅: SQLite embebido (`better-sqlite3`). Tabla `diagrams` (ver
+    `backend/schema.sql`), auto-creada idempotente por `initDb()` al arrancar. Endpoints CRUD
+    `GET/POST/PUT/DELETE /diagrams` en `backend/db.mjs`. El archivo `backend/archify.db` se crea solo
+    (ruta configurable con `DATABASE_FILE`); no requiere ninguna BD externa. Si el disco no deja crear
+    el archivo, la persistencia se desactiva y `/diagrams` responde 503 (layout/export siguen
+    funcionando). El frontend tiene un desplegable "Mis diagramas" (Guardar server-side POST/PUT,
+    Cargar, Eliminar);
   - **3b auth/multiusuario** — descartado. El objetivo no es login: es que cualquiera pueda **clonar
-    el repo, configurar su `DATABASE_URL` y correrlo**. La app es de un solo espacio de trabajo por
+    el repo y correrlo** sin configurar una BD externa. La app es de un solo espacio de trabajo por
     despliegue; `owner_id` queda como columna latente por si algún día se necesita.
-  - **3c hosting** — pendiente (Docker Compose + Coolify + subdominio Cloudflare Tunnel), para publicar
-    tu propia instancia.
+  - **3c hosting** ✅: despliegue local con Docker (`docker compose up --build`, puerto 4319, volumen
+    `archify-data`), pensado para correr en tu propio homelab por LAN.
 
 ## Notas de diseño
 
@@ -229,3 +231,20 @@ HOST=0.0.0.0 PORT=4319 node server.mjs     # sirve API + dist en el mismo puerto
 - Tensión de fondo: draw.io es free-form (coordenadas absolutas); Archify es auto-layout
   (calcula coordenadas, rechaza cruces). Este proyecto elige que el auto-layout mande, a
   cambio de diagramas que siempre se ven bien.
+
+## Créditos y licencia
+
+**Archify Studio se construye sobre [Archify](https://github.com/tt-a1i/archify)**, un
+generador de diagramas de código abierto (MIT). Archify es el **motor**: convierte un JSON
+tipado en el HTML/SVG autocontenido que ves en el preview y exportas. Vive sin modificar en
+[`engine/`](engine/), con su licencia y avisos de terceros intactos
+([`engine/LICENSE`](engine/LICENSE), [`engine/THIRD_PARTY_NOTICES.md`](engine/THIRD_PARTY_NOTICES.md)).
+
+Este repositorio **añade** sobre ese motor: el formato JSON simple y su traductor
+(`backend/simple.mjs`), el backend Fastify que orquesta el motor, el editor web (Vite + React)
+con preview en vivo, la persistencia SQLite y el despliegue contenedorizado. Archify Studio no
+modifica el motor: lo consume como dependencia.
+
+- Trabajo derivado (backend/frontend/despliegue): MIT — ver [`LICENSE`](LICENSE).
+- Motor Archify (`engine/`): MIT © tt-a1i (Archify) · Cocoon AI.
+- Detalle completo de atribución: [`NOTICE`](NOTICE).
