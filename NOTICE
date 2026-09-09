@@ -1,0 +1,40 @@
+Archify Studio
+Copyright (c) 2026 Carlos Hernan Arias Yepes
+
+This product is a derivative work built on top of Archify.
+
+================================================================================
+Archify (diagram engine, vendored under engine/)
+================================================================================
+
+Upstream project: https://github.com/tt-a1i/archify
+License:          MIT (see engine/LICENSE)
+Copyright (c) 2026 tt-a1i (Archify)
+Copyright (c) 2025 Cocoon AI
+
+The entire contents of engine/ are Archify's original code and assets,
+vendored without modification. Archify is the layout and rendering engine:
+it takes a typed JSON spec and produces the standalone HTML/SVG output. Its
+MIT license and third-party notices are preserved intact in:
+
+  - engine/LICENSE
+  - engine/THIRD_PARTY_NOTICES.md   (brand-mark / Simple Icons attributions)
+
+================================================================================
+What Archify Studio adds on top of Archify
+================================================================================
+
+Original work in this repository (backend/, frontend/, Dockerfile,
+docker-compose.yml, and this NOTICE):
+
+  - A simplified JSON authoring format and a translator (backend/simple.mjs)
+    that infers Archify's verbose layout (lane/col/pos/mainPath/viewBox) per
+    diagram type.
+  - A Fastify HTTP backend that drives the Archify engine and exposes render,
+    export, and CRUD endpoints, with an LRU render cache.
+  - A Vite + React web editor: a JSON text pane with a live preview of the
+    HTML that the Archify engine generates.
+  - Local persistence via SQLite (better-sqlite3), self-contained.
+  - Containerized single-instance deployment (Dockerfile + docker-compose.yml).
+
+Archify Studio does not modify the engine; it consumes it as a dependency.

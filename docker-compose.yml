@@ -1,0 +1,16 @@
+services:
+  archify-studio:
+    build: .
+    ports:
+      - "4319:4319"
+    volumes:
+      - archify-data:/data
+    environment:
+      HOST: 0.0.0.0
+      PORT: "4319"
+      DATABASE_FILE: /data/archify.db
+      # CORS_ORIGIN: https://tu-dominio.example   # solo si el frontend vive en otro origen
+    restart: unless-stopped
+
+volumes:
+  archify-data:
