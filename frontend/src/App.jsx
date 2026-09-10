@@ -224,12 +224,18 @@ export default function App() {
   const save = useCallback(async () => {
     let simple;
     try { simple = JSON.parse(text); } catch (e) { setError(`JSON inválido: ${e.message}`); return; }
+    const suggested = simple.title ?? `${type} sin título`;
+    const name = window.prompt('Nombre del diagrama:', suggested);
+    if (name === null) return;
+    const trimmed = name.trim() || suggested;
+    simple.title = trimmed;
+    const nextText = pretty(simple);
+    setText(nextText);
     setBusy(true); setError(null);
     try {
-      const name = simple.title ?? `${type} sin título`;
       const method = currentId ? 'PUT' : 'POST';
       const url = currentId ? `${API}/diagrams/${currentId}` : `${API}/diagrams`;
-      const body = currentId ? { name, spec: simple } : { name, type, spec: simple };
+      const body = currentId ? { name: trimmed, spec: simple } : { name: trimmed, type, spec: simple };
       const json = await (await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json();
       if (!json.ok) { setError(json.error ?? 'No se pudo guardar'); return; }
       setCurrentId(json.diagram.id);
@@ -279,6 +285,16 @@ export default function App() {
     } catch (e) { setError(String(e)); } finally { setBusy(false); }
   }, [text, type]);
 
+  const exportJson = useCallback(() => {
+    let simple;
+    try { simple = JSON.parse(text); } catch (e) { setError(`JSON inválido: ${e.message}`); return; }
+    const url = URL.createObjectURL(new Blob([pretty(simple)], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = `${(simple.title ?? 'diagrama').replace(/\s+/g, '-')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [text]);
+
   return (
     <div className="app">
       <header className="toolbar">
@@ -294,6 +310,7 @@ export default function App() {
         <button onClick={save} disabled={busy}>{currentId ? 'Guardar' : 'Guardar nuevo'}</button>
         {currentId && <button className="danger" onClick={deleteCurrent} disabled={busy}>Eliminar</button>}
         <button className="export" onClick={exportHtml} disabled={busy}>⬇ Exportar HTML</button>
+        <button className="export" onClick={exportJson} disabled={busy}>⬇ Exportar JSON</button>
         {busy && <span className="status">renderizando…</span>}
         {saved && <span className="status ok">{saved}</span>}
         {error && <span className="error">⚠ {error}</span>}
